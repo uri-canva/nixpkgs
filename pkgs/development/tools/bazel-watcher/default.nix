@@ -31,6 +31,8 @@ buildBazelPackage rec {
 
   bazelTarget = "//ibazel";
 
+  startupFlags = [ "--bazelrc=tools/bazel.rc" ];
+
   fetchAttrs = {
     preBuild = ''
       patchShebangs .
@@ -54,7 +56,7 @@ buildBazelPackage rec {
       sed -e '/^FILE:@go_sdk.*/d' -i $bazelOut/external/\@*.marker
     '';
 
-    sha256 = "1iyjvibvlwg980p7nizr6x5v31dyp4a344f0xn839x393583k59d";
+    sha256 = "09q6jy77ml7yyngnrrj5sdjb32c84rqxz2v0fc2qc8070lg08zlf";
   };
 
   buildAttrs = {

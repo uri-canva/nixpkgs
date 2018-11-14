@@ -1,4 +1,4 @@
-{ stdenv, buildBazelPackage, lib, fetchFromGitHub, git, jre, makeWrapper }:
+{ stdenv, buildBazelPackage, lib, fetchFromGitHub, git, jdk8, jre, makeWrapper }:
 
 buildBazelPackage rec {
   name = "bazel-deps-${version}";
@@ -21,7 +21,7 @@ buildBazelPackage rec {
 
   bazelTarget = "//src/scala/com/github/johnynek/bazel_deps:parseproject_deploy.jar";
 
-  buildInputs = [ git makeWrapper ];
+  buildInputs = [ git makeWrapper jdk8 ];
 
   fetchAttrs = {
     preInstall = ''

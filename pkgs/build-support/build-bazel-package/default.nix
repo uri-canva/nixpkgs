@@ -1,6 +1,6 @@
 { stdenv, bazel, enableNixHacks ? true }:
 
-args@{ name, bazelFlags ? [], bazelTarget, buildAttrs, fetchAttrs, ... }:
+args@{ name, bazelFlags ? [], bazelTarget, startupFlags ? [], buildAttrs, fetchAttrs, ... }:
 
 let
   fArgs = removeAttrs args [ "buildAttrs" "fetchAttrs" ];
@@ -8,11 +8,11 @@ let
   fFetchAttrs = fArgs // removeAttrs fetchAttrs [ "sha256" ];
 
 in stdenv.mkDerivation (fBuildAttrs // {
-  inherit name bazelFlags bazelTarget;
+  inherit name bazelFlags bazelTarget startupFlags;
 
   deps = stdenv.mkDerivation (fFetchAttrs // {
     name = "${name}-deps";
-    inherit bazelFlags bazelTarget;
+    inherit bazelFlags bazelTarget startupFlags;
 
     nativeBuildInputs = fFetchAttrs.nativeBuildInputs or [] ++ [ bazel ];
 
@@ -31,7 +31,14 @@ in stdenv.mkDerivation (fBuildAttrs // {
       # sandbox enabled. Code here
       # https://github.com/bazelbuild/bazel/blob/9323c57607d37f9c949b60e293b573584906da46/src/main/cpp/startup_options.cc#L123-L124
       #
-      USER=homeless-shelter bazel --output_base="$bazelOut" --output_user_root="$bazelUserRoot" fetch $bazelFlags $bazelTarget
+      USER=homeless-shelter \
+          bazel \
+          --output_base="$bazelOut" \
+          --output_user_root="$bazelUserRoot" \
+          $startupFlags \
+          fetch \
+          $bazelFlags \
+          $bazelTarget
 
       runHook postBuild
     '';
@@ -87,9 +94,16 @@ in stdenv.mkDerivation (fBuildAttrs // {
 
   buildPhase = fBuildAttrs.buildPhase or ''
     runHook preBuild
-
-    bazel --output_base="$bazelOut" --output_user_root="$bazelUserRoot" build -j $NIX_BUILD_CORES $bazelFlags $bazelTarget
-
+    bazel \
+      --output_base="$bazelOut" \
+      --output_user_root="$bazelUserRoot" \
+      $startupFlags \
+      build \
+      --java_toolchain=@bazel_tools//tools/jdk:toolchain_hostjdk8 \
+      --host_java_toolchain=@bazel_tools//tools/jdk:toolchain_hostjdk8 \
+      -j $NIX_BUILD_CORES \
+      $bazelFlags \
+      $bazelTarget
     runHook postBuild
   '';
 })

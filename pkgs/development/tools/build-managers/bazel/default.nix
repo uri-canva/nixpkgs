@@ -1,10 +1,8 @@
 { stdenv, lib, fetchurl, fetchpatch, runCommand, makeWrapper
-, jdk, zip, unzip, bash, writeCBin, coreutils
+, jdk8, zip, unzip, bash, writeCBin, coreutils
 , which, python, perl, gnused, gnugrep, findutils
 # Apple dependencies
 , cctools, clang, libcxx, CoreFoundation, CoreServices, Foundation
-# Allow to independently override the jdks used to build and run respectively
-, buildJdk ? jdk, runJdk ? jdk
 # Always assume all markers valid (don't redownload dependencies).
 # Also, don't clean up environment variables.
 , enableNixHacks ? false
@@ -13,8 +11,8 @@
 let
   srcDeps = lib.singleton (
     fetchurl {
-      url = "https://github.com/google/desugar_jdk_libs/archive/fd937f4180c1b557805219af4482f1a27eb0ff2b.zip";
-      sha256 = "04hs399340xfwcdajbbcpywnb2syp6z5ydwg966if3hqdb2zrf23";
+      url = "https://github.com/google/desugar_jdk_libs/archive/2469f523a07d1e16797c27528d4953e7b2192a32.zip";
+      sha256 = "1qcbn7qrbakbxfk878ljjrhpbz1cdlwgdma3283g3l8yridi4cs2";
     }
   );
 
@@ -28,7 +26,7 @@ let
 in
 stdenv.mkDerivation rec {
 
-  version = "0.18.0";
+  version = "0.19.0";
 
   meta = with lib; {
     homepage = "https://github.com/bazelbuild/bazel/";
@@ -42,7 +40,7 @@ stdenv.mkDerivation rec {
 
   src = fetchurl {
     url = "https://github.com/bazelbuild/bazel/releases/download/${version}/bazel-${version}-dist.zip";
-    sha256 = "0mbi4n4wp1x73l8qksg4vyh2sba52xh9hfl2m518gv41g0pnvs6h";
+    sha256 = "05akc6dbmj7jjxvy6vipcnq9q8agpjm87ba33m1ch1kkqk2kaqgf";
   };
 
   sourceRoot = ".";
@@ -131,10 +129,10 @@ stdenv.mkDerivation rec {
       echo "build --host_copt=\"$(echo $NIX_CFLAGS_COMPILE | sed -e 's/ /" --host_copt=\"/g')\"" >> .bazelrc
       echo "build --linkopt=\"-Wl,$(echo $NIX_LDFLAGS | sed -e 's/ /" --linkopt=\"-Wl,/g')\"" >> .bazelrc
       echo "build --host_linkopt=\"-Wl,$(echo $NIX_LDFLAGS | sed -e 's/ /" --host_linkopt=\"-Wl,/g')\"" >> .bazelrc
-      sed -i -e "378 a --copt=\"$(echo $NIX_CFLAGS_COMPILE | sed -e 's/ /" --copt=\"/g')\" \\\\" scripts/bootstrap/compile.sh
-      sed -i -e "378 a --host_copt=\"$(echo $NIX_CFLAGS_COMPILE | sed -e 's/ /" --host_copt=\"/g')\" \\\\" scripts/bootstrap/compile.sh
-      sed -i -e "378 a --linkopt=\"-Wl,$(echo $NIX_LDFLAGS | sed -e 's/ /" --linkopt=\"-Wl,/g')\" \\\\" scripts/bootstrap/compile.sh
-      sed -i -e "378 a --host_linkopt=\"-Wl,$(echo $NIX_LDFLAGS | sed -e 's/ /" --host_linkopt=\"-Wl,/g')\" \\\\" scripts/bootstrap/compile.sh
+      sed -i -e "385 a --copt=\"$(echo $NIX_CFLAGS_COMPILE | sed -e 's/ /" --copt=\"/g')\" \\\\" scripts/bootstrap/compile.sh
+      sed -i -e "385 a --host_copt=\"$(echo $NIX_CFLAGS_COMPILE | sed -e 's/ /" --host_copt=\"/g')\" \\\\" scripts/bootstrap/compile.sh
+      sed -i -e "385 a --linkopt=\"-Wl,$(echo $NIX_LDFLAGS | sed -e 's/ /" --linkopt=\"-Wl,/g')\" \\\\" scripts/bootstrap/compile.sh
+      sed -i -e "385 a --host_linkopt=\"-Wl,$(echo $NIX_LDFLAGS | sed -e 's/ /" --host_linkopt=\"-Wl,/g')\" \\\\" scripts/bootstrap/compile.sh
 
       # --experimental_strict_action_env (which will soon become the
       # default, see bazelbuild/bazel#2574) hardcodes the default
@@ -155,7 +153,7 @@ stdenv.mkDerivation rec {
      + genericPatches;
 
   buildInputs = [
-    buildJdk
+    jdk8
   ];
 
   nativeBuildInputs = [
@@ -185,7 +183,9 @@ stdenv.mkDerivation rec {
   doCheck = true;
   checkPhase = ''
     export TEST_TMPDIR=$(pwd)
-    ./output/bazel test --test_output=errors \
+    ./output/bazel test \
+        --java_toolchain=@bazel_tools//tools/jdk:toolchain_hostjdk8 \
+        --test_output=errors \
         examples/cpp:hello-success_test \
         examples/java-native/src/test/java/com/example/myproject:hello
   '';
@@ -198,8 +198,6 @@ stdenv.mkDerivation rec {
     cp scripts/packages/bazel.sh $out/bin/bazel
     mv output/bazel $out/bin/bazel-real
 
-    wrapProgram "$out/bin/bazel" --set JAVA_HOME "${runJdk}"
-
     # shell completion files
     mkdir -p $out/share/bash-completion/completions $out/share/zsh/site-functions
     mv output/bazel-complete.bash $out/share/bash-completion/completions/bazel
@@ -211,7 +209,9 @@ stdenv.mkDerivation rec {
     export TEST_TMPDIR=$(pwd)
 
     hello_test () {
-      $out/bin/bazel test --test_output=errors \
+      $out/bin/bazel test \
+        --java_toolchain=@bazel_tools//tools/jdk:toolchain_hostjdk8 \
+        --test_output=errors \
         examples/cpp:hello-success_test \
         examples/java-native/src/test/java/com/example/myproject:hello
     }
