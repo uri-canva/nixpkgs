@@ -23,6 +23,10 @@ let
         url = "https://mirror.bazel.build/bazel_java_tools/java_tools_pkg-0.5.1.tar.gz";
         sha256 = "1ld8m5cj9j0r474f56pixcfi0xvx3w7pzwahxngs8f6ns0yimz5w";
     })
+    (fetchurl {
+        url = "https://mirror.bazel.build/github.com/bazelbuild/skydoc/archive/2d9566b21fbe405acf5f7bf77eda30df72a4744c.tar.gz";
+        sha256 = "1h5xrs7zfnk3wy1f9ivinp110gkmmk1imbacq129i05a55hqiryi";
+    })
   ];
 
   distDir = runCommand "bazel-deps" {} ''
