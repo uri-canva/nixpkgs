@@ -220,6 +220,15 @@ stdenv.mkDerivation rec {
         src/main/java/com/google/devtools/build/lib/bazel/rules/BazelRuleClassProvider.java \
         --replace /bin:/usr/bin ${defaultShellPath}
 
+      # This is necessary to avoid:
+      # "error: no visible @interface for 'NSDictionary' declares the selector
+      # 'initWithContentsOfURL:error:'"
+      # This can be removed when the apple_sdk is upgraded beyond 10.13+
+      sed -i '/initWithContentsOfURL:versionPlistUrl/ {
+        N
+        s/error:nil\];/\];/
+      }' tools/osx/xcode_locator.m
+
       # append the PATH with defaultShellPath in tools/bash/runfiles/runfiles.bash
       echo "PATH=\$PATH:${defaultShellPath}" >> runfiles.bash.tmp
       cat tools/bash/runfiles/runfiles.bash >> runfiles.bash.tmp
