@@ -25,7 +25,7 @@ let
     })
     (fetchurl {
         url = "https://mirror.bazel.build/github.com/bazelbuild/skydoc/archive/2d9566b21fbe405acf5f7bf77eda30df72a4744c.tar.gz";
-        sha256 = "1h5xrs7zfnk3wy1f9ivinp110gkmmk1imbacq129i05a55hqiryi";
+        sha256 = "0grv3hni6igzva7dlnvy2qmmj2dff2mv6yg87jw9f5l3skz1h4sa";
     })
   ];
 
