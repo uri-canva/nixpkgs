@@ -66,7 +66,7 @@ let
 in
 stdenv.mkDerivation rec {
 
-  version = "0.24.0";
+  version = "0.26.0";
 
   meta = with lib; {
     homepage = "https://github.com/bazelbuild/bazel/";
@@ -90,7 +90,7 @@ stdenv.mkDerivation rec {
 
   src = fetchurl {
     url = "https://github.com/bazelbuild/bazel/releases/download/${version}/${name}-dist.zip";
-    sha256 = "11gsc00ghxqkbci8nrflkwq1lcvqawlgkaryj458b24si6bjl7b2";
+    sha256 = "d26dadf62959255d58e523da3448a6222af768fe1224e321b120c1d5bbe4b4f2";
   };
 
   # Necessary for the tests to pass on Darwin with sandbox enabled.
@@ -148,10 +148,6 @@ stdenv.mkDerivation rec {
       # https://github.com/NixOS/nixpkgs/pull/41589
       export NIX_CFLAGS_COMPILE="$NIX_CFLAGS_COMPILE -isystem ${libcxx}/include/c++/v1"
 
-      # 10.10 apple_sdk Foundation doesn't have type arguments on classes
-      # Remove this when we update apple_sdk
-      sed -i -e 's/<.*\*>//g' tools/osx/xcode_locator.m
-
       # don't use system installed Xcode to run clang, use Nix clang instead
       sed -i -e "s;/usr/bin/xcrun clang;${stdenv.cc}/bin/clang $NIX_CFLAGS_COMPILE $NIX_LDFLAGS -framework CoreFoundation;g" \
         scripts/bootstrap/compile.sh \
@@ -193,7 +189,7 @@ stdenv.mkDerivation rec {
 
       # Fixup scripts that generate scripts. Not fixed up by patchShebangs below.
       substituteInPlace scripts/bootstrap/compile.sh \
-          --replace /bin/sh ${customBash}/bin/bash
+          --replace /bin/bash ${customBash}/bin/bash
 
       # add nix environment vars to .bazelrc
       cat >> .bazelrc <<EOF
@@ -223,15 +219,6 @@ stdenv.mkDerivation rec {
       substituteInPlace \
         src/main/java/com/google/devtools/build/lib/bazel/rules/BazelRuleClassProvider.java \
         --replace /bin:/usr/bin ${defaultShellPath}
-
-      # This is necessary to avoid:
-      # "error: no visible @interface for 'NSDictionary' declares the selector
-      # 'initWithContentsOfURL:error:'"
-      # This can be removed when the apple_sdk is upgraded beyond 10.13+
-      sed -i '/initWithContentsOfURL:versionPlistUrl/ {
-        N
-        s/error:nil\];/\];/
-      }' tools/osx/xcode_locator.m
 
       # append the PATH with defaultShellPath in tools/bash/runfiles/runfiles.bash
       echo "PATH=\$PATH:${defaultShellPath}" >> runfiles.bash.tmp
