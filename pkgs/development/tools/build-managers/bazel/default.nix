@@ -14,18 +14,20 @@
 
 let
   srcDeps = [
+    # From: $REPO_ROOT/WORKSPACE
     (fetchurl {
       url = "https://github.com/google/desugar_jdk_libs/archive/915f566d1dc23bc5a8975320cd2ff71be108eb9c.zip";
       sha256 = "0b926df7yxyyyiwm9cmdijy6kplf0sghm23sf163zh8wrk87wfi7";
     })
-
-    (fetchurl {
-        url = "https://mirror.bazel.build/bazel_java_tools/java_tools_pkg-0.5.1.tar.gz";
-        sha256 = "1ld8m5cj9j0r474f56pixcfi0xvx3w7pzwahxngs8f6ns0yimz5w";
-    })
+    # From: $REPO_ROOT/WORKSPACE
     (fetchurl {
         url = "https://mirror.bazel.build/github.com/bazelbuild/skydoc/archive/2d9566b21fbe405acf5f7bf77eda30df72a4744c.tar.gz";
         sha256 = "0grv3hni6igzva7dlnvy2qmmj2dff2mv6yg87jw9f5l3skz1h4sa";
+    })
+    # From: $REPO_ROOT/WORKSPACE
+    (fetchurl {
+        url = "https://mirror.bazel.build/bazel_java_tools/releases/javac10/v3.1/java_tools_javac10_linux-v3.1.zip";
+        sha256 = "a0cd51f9db1bf05a722ff7f5c60a07fa1c7d27428fff0815c342d32aa6c53576";
     })
   ];
 
@@ -272,7 +274,7 @@ stdenv.mkDerivation rec {
 
   buildPhase = ''
     # Increasing memory during compilation might be necessary.
-    # export BAZEL_JAVAC_OPTS="-J-Xmx2g -J-Xms200m"
+    export BAZEL_JAVAC_OPTS="-J-Xmx2g -J-Xms200m"
     ./bazel_src/compile.sh
     ./bazel_src/scripts/generate_bash_completion.sh \
         --bazel=./bazel_src/output/bazel \
@@ -305,6 +307,7 @@ stdenv.mkDerivation rec {
       $out/bin/bazel test \
         --test_output=errors \
         --java_toolchain='${javaToolchain}' \
+        --sandbox_debug \
         examples/cpp:hello-success_test \
         examples/java-native/src/test/java/com/example/myproject:hello
     }
