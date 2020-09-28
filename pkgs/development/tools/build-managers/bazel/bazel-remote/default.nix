@@ -3,21 +3,24 @@
 , fetchFromGitHub
 , git
 , go
+, python
 , stdenv
+# Apple dependencies
+, libcxx, CoreFoundation, CoreServices, Foundation
 }:
 
 buildBazelPackage rec {
   name = "bazel-remote-${version}";
-  version = "1.0.0";
+  version = "1.2.0";
 
   src = fetchFromGitHub {
     owner = "buchgr";
     repo = "bazel-remote";
     rev = "v${version}";
-    sha256 = "1fpdw139d5q1377qnqbgkahmdr4mdaa17d2m10wkyvyvijwm4r2m";
+    sha256 = "1ycffgm5p4xx7dnx2k1bfalwn0s1468849601s4x7fbwmnyp8sjz";
   };
 
-  nativeBuildInputs = [ go git ];
+  nativeBuildInputs = [ go git python ];
 
   bazelTarget = "//:bazel-remote";
 
@@ -64,11 +67,19 @@ buildBazelPackage rec {
       sed -e '/^FILE:@bazel_gazelle_go_repository_tools.*/d' -i $bazelOut/external/\@*.marker
     '';
 
-    sha256 = "1m7fmb03lirffxx04ck73bn5zwaji7zdwhlqq8s1c6pgp755d3vi";
+    sha256 = if stdenv.isDarwin then "0h6hmm8kkkwk0q8idlbfr50iplmrm2g7dsy6f5k2hilp8xmfssmw" else "1b6252cz26qwc5nvd34ld3fr908bz55w136x9y27yx39z5ynnbb8";
   };
 
   buildAttrs = {
-    preBuild = ''
+    preBuild = stdenv.lib.optionalString stdenv.isDarwin ''
+        # Framework search paths aren't added by bintools hook
+      # https://github.com/NixOS/nixpkgs/pull/41914
+      export NIX_LDFLAGS+=" -F${CoreFoundation}/Library/Frameworks -F${CoreServices}/Library/Frameworks -F${Foundation}/Library/Frameworks"
+
+      # libcxx includes aren't added by libcxx hook
+      # https://github.com/NixOS/nixpkgs/pull/41589
+      export NIX_CFLAGS_COMPILE="$NIX_CFLAGS_COMPILE -isystem ${libcxx}/include/c++/v1"
+    '' + ''
       patchShebangs .
 
       # tell rules_go to use the Go binary found in the PATH
